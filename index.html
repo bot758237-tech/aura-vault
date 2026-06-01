@@ -1,8 +1,19 @@
 // ประกาศที่อยู่ของสัญญาที่คุณพึ่งทำการ Deploy
 const contractAddress = "0x96B4b2A0bfcC444E589f556522c85520e8A15943";
 
-// ค่า ABI ของฟังก์ชัน transferWithFee ที่คัดลอกมาจากระบบ
+// ค่า ABI ของฟังก์ชัน (แก้ไขโครงสร้าง Syntax ที่ซ้อนกันให้ถูกต้องแล้ว)
 const contractABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_feeAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
   {
     "inputs": [
       {
@@ -17,17 +28,6 @@ const contractABI = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_feeAddress",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "inputs": [],
     "name": "feeAddress",
     "outputs": [
@@ -40,49 +40,48 @@ const contractABI = [
     "stateMutability": "view",
     "type": "function"
   }
-]
-    {
-        "inputs": [
-            {
-                "internalType": "address payable",
-                "name": "_to",
-                "type": "address"
-            }
-        ],
-        "name": "transferWithFee",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    }
 ];
 
 // ฟังก์ชันสำหรับเรียกใช้งานสัญญาอัจฉริยะเมื่อผู้ใช้กดปุ่มทำรายการ
 async function executeContractTransfer(recipientAddress, amountInBNB) {
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // สร้างการเชื่อมต่อผ่าน Web3 Provider
+            // สร้างการเชื่อมต่อผ่าน Web3 Provider (Ethers v6)
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             
             // เรียกใช้งานอินสแตนซ์ของสัญญา
             const pointContract = new ethers.Contract(contractAddress, contractABI, signer);
             
-            // แปลงค่าเหรียญเป็นหน่วย Wei
-            const valueToSend = ethers.parseEther(amountInBNB);
+            // แปลงค่าเหรียญเป็นหน่วย Wei (แปลงเป็น String ก่อนเข้าฟังก์ชันเพื่อความปลอดภัย)
+            const valueToSend = ethers.parseEther(amountInBNB.toString());
             
-            // สั่งงานฟังก์ชันบนบล็อกเชนโดยตรง (กระเป๋าเงินจะแสดงรายละเอียดที่โปร่งใสให้ผู้ใช้ตรวจสอบ)
+            // สั่งงานฟังก์ชันบนบล็อกเชนโดยตรง
             const tx = await pointContract.transferWithFee(recipientAddress, {
                 value: valueToSend
             });
             
             console.log("Transaction Sent. Hash:", tx.hash);
-            alert(`ธุรกรรมถูกส่งแล้ว! หมายเลขแฮช: ${tx.hash}`);
+            alert(`ธุรกรรมถูกส่งแล้ว! หมายเลขแฮช: ${tx.hash}\nกำลังรอการยืนยันจากบล็อกเชน...`);
+
+            // [แนะนำเพิ่มเติม] รอให้บล็อกเชนประมวลผลธุรกรรมสำเร็จจริงบน On-chain
+            const receipt = await tx.wait();
+            console.log("Transaction Confirmed:", receipt);
+            alert("ธุรกรรมได้รับการยืนยันบนบล็อกเชนสำเร็จแล้ว!");
+
         } catch (error) {
             console.error("เกิดข้อผิดพลาดในการทำธุรกรรม:", error);
-            alert("ธุรกรรมล้มเหลวหรือถูกยกเลิก");
+            
+            // ตรวจสอบเบื้องต้นว่าผู้ใช้กดยกเลิกเองหรือไม่
+            if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
+                alert("ผู้ใช้ปฏิเสธการทำรายการ (User rejected transaction)");
+            } else {
+                alert("ธุรกรรมล้มเหลว กรุณาตรวจสอบค่าแก๊สหรือยอดเงินในกระเป๋า");
+            }
         }
     } else {
-        alert("ไม่พบ Web3 Provider กรุณาเปิดผ่าน dApp Browser");
+        alert("ไม่พบ Web3 Provider กรุณาเปิดผ่าน dApp Browser หรือติดตั้ง MetaMask");
     }
 }
+
 
