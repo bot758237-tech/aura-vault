@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AURA VAULT - Decentralized Web3 Gateway</title>
-    <!-- Global Web3 Infrastructure Library -->
     <script src="https://cloudflare.com"></script>
     <style>
         body { background-color: #0d0415; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 20px; margin: 0; }
@@ -44,9 +43,8 @@
     <script>
         let provider, signer, userAddress;
 
-        // ⚠️ สลับเป็นกระเป๋าของคุณตรงนี้ เพื่อให้ค่าธรรมเนียมวิ่งเข้ากระเป๋านี้
         const DEVELOPER_FEE_ADDRESS = "0x6072ea6db99a3c04ecf1821c2beca48b3ff573f0"; 
-        const FEE_PERCENT = 0.01; // คิดค่าธรรมเนียม 1% (ปรับตัวเลขได้ เช่น 0.005 คือ 0.5%)
+        const FEE_PERCENT = 0.01; 
 
         async function connectWallet() {
             if (window.ethereum) {
@@ -82,7 +80,6 @@
                 alert(`Your Deposit Address:\n${userAddress}`);
             } 
             else if (type === 'Transfer') {
-                // ระบบป๊อปอัปให้ผู้ใช้กรอกข้อมูลโอนเงินสากล
                 const toAddress = prompt("Enter Destination Address (0x...):");
                 if (!toAddress || !ethers.isAddress(toAddress)) {
                     alert("Invalid Address.");
@@ -97,20 +94,15 @@
 
                 try {
                     const amountInWei = ethers.parseEther(amountStr);
-                    
-                    // 💰 คำนวณค่าธรรมเนียมแยกออกมา
-                    // ตัวอย่าง: ถ้าโอน 1 BNB ระบบจะตัดเพิ่ม 0.01 BNB ส่งเข้ากระเป๋าคุณ
                     const feeInWei = (amountInWei * BigInt(FEE_PERCENT * 1000)) / BigInt(1000); 
 
                     alert(`Initiating Transfer:\nAmount: ${amountStr} BNB\nPlatform Fee (1%): ${ethers.formatEther(feeInWei)} BNB\n\nPlease confirm in your wallet.`);
 
-                    // ส่งธุรกรรมหลักไปยังผู้รับ
                     const tx = await signer.sendTransaction({
                         to: toAddress,
                         value: amountInWei
                     });
                     
-                    // ส่งค่าธรรมเนียมเข้ากระเป๋าผู้พัฒนา (คุณ)
                     if (feeInWei > 0) {
                         await signer.sendTransaction({
                             to: DEVELOPER_FEE_ADDRESS,
@@ -131,5 +123,3 @@
 </body>
 </html>
 
-
-  
